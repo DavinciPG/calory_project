@@ -20,6 +20,9 @@ const ItemController = (function() {
     }
 
     return {
+        getItems: function() {
+            return data.items
+        },
         logData: function() {
             return data
         }
@@ -28,7 +31,24 @@ const ItemController = (function() {
 
 // UI Controller
 const UIController = (function() {
+    return {
+        populateItemList: function(items) {
+            // create html content
+            let html = '';
 
+            // parse data
+            items.forEach(function(item) {
+                html += `<li class="collection-item" id="item-${item.id}">
+                         <strong>${item.name}: </strong><em>${item.calories} Calories</em>
+                         <a href="#" class="secondary-content">
+                            <i class="edit-item fa-fa-pencil"></i>
+                         </a>
+                         </li>`
+            });
+
+            document.querySelector("#item-list").innerHTML = html;
+        }
+    }
 })();
 
 // App Controller
@@ -37,6 +57,10 @@ const App = (function(ItemController, UIController) {
     return {
         init: function() {
             console.log('Initialization...')
+
+            const items = ItemController.getItems()
+
+            UIController.populateItemList(items)
         }
     }
 })(ItemController, UIController);
