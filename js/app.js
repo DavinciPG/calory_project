@@ -53,9 +53,10 @@ const UIController = (function() {
         addBtn: '.add-btn'
     }
     return {
-        populateItemList: function(items) {
+        populateItemList: function() {
             // create html content
             let html = '';
+            const items = ItemController.getItems()
 
             // parse data
             items.forEach(function(item) {
@@ -78,6 +79,12 @@ const UIController = (function() {
                 name:document.querySelector(UISelectors.itemNameInput).value,
                 calories: document.querySelector(UISelectors.itemCaloriesInput).value
             }
+        },
+        clearInput: function() {
+            document.querySelector(UISelectors.itemNameInput)
+                .value = ''
+            document.querySelector(UISelectors.itemCaloriesInput)
+                .value = ''
         }
     }
 })();
@@ -95,8 +102,14 @@ const App = (function(ItemController, UIController) {
         const input = UIController.getItemInput()
         // prevent null being added to list
         if(input.name !== '' && input.calories !== '') {
-            const item = ItemController.addItem(input.name, input.calories)
-            console.log(item)
+            ItemController.addItem(input.name, input.calories)
+
+            // We don't need to make another function just to redo the item list
+            // when we already have a working function.
+            UIController.populateItemList()
+
+            // Clearing input values
+            UIController.clearInput()
         }
 
         event.preventDefault()
@@ -106,8 +119,7 @@ const App = (function(ItemController, UIController) {
             console.log('Initialization...')
 
             // Item setup
-            const items = ItemController.getItems()
-            UIController.populateItemList(items)
+            UIController.populateItemList()
 
             // Event listener setup
             loadEventListeners()
