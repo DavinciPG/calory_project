@@ -1,4 +1,31 @@
 // Storage controller
+const StorageController = (function() {
+    // public
+    return {
+        storeItem: function(item) {
+            let items;
+
+            if(localStorage.getItem('items') === null) {
+                items = []
+                items.push(item)
+                localStorage.setItem('items', JSON.stringify(items));
+            } else {
+                items = JSON.parse(localStorage.getItem('items'));
+                items.push(item)
+                localStorage.setItem('items', JSON.stringify(items));
+            }
+        },
+        getItems: function() {
+            let items;
+            if(localStorage.getItem('items') === null) {
+                items = []
+            } else {
+                items = JSON.parse(localStorage.getItem('items'))
+            }
+            return items;
+        },
+    }
+})();
 
 // Item Controller
 const ItemController = (function() {
@@ -12,14 +39,18 @@ const ItemController = (function() {
     // Struct
     const data = {
         items: [
-            {id: 0, name: 'Steak Dinner', calories: 1200},
-            {id: 1, name: 'Cookie', calories: 400},
-            {id: 2, name: 'Egg', calories: 300}
+
         ],
         total: 0
     }
 
     return {
+        includes: function(item) {
+            if(data.items.includes(item))
+                return true
+            else
+                return false
+        },
         getItems: function() {
             return data.items
         },
@@ -68,7 +99,8 @@ const UIController = (function() {
         populateItemList: function() {
             // create html content
             let html = '';
-            const items = ItemController.getItems()
+
+            const items = StorageController.getItems()
 
             // parse data
             items.forEach(function(item) {
@@ -108,7 +140,7 @@ const UIController = (function() {
 })();
 
 // App Controller
-const App = (function(ItemController, UIController) {
+const App = (function(StorageController, ItemController, UIController) {
     const loadEventListeners = function() {
         // UI Selector setup
         const UISelectors = UIController.getSelectors();
@@ -120,7 +152,8 @@ const App = (function(ItemController, UIController) {
         const input = UIController.getItemInput()
         // prevent null being added to list
         if(input.name !== '' && input.calories !== '') {
-            ItemController.addItem(input.name, input.calories)
+            const newItem = ItemController.addItem(input.name, input.calories)
+            StorageController.storeItem(newItem)
 
             // We don't need to make another function just to redo the item list
             // when we already have a working function.
@@ -132,9 +165,21 @@ const App = (function(ItemController, UIController) {
 
         event.preventDefault()
     }
+
+    const fillItemList = function() {
+        const items = StorageController.getItems()
+        items.forEach(function(item) {
+            if(!ItemController.includes(item)) {
+                ItemController.addItem(item.name, item.calories)
+            }
+        })
+    }
+
     return {
         init: function() {
             console.log('Initialization...')
+
+            fillItemList()
 
             // Item setup
             UIController.populateItemList()
@@ -143,7 +188,7 @@ const App = (function(ItemController, UIController) {
             loadEventListeners()
         }
     }
-})(ItemController, UIController);
+})(StorageController, ItemController, UIController);
 
 // Initialize app
 App.init()
