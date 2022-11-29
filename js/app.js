@@ -58,16 +58,10 @@ const ItemController = (function() {
         getItems: function() {
             return data.items
         },
-        addItem: function(name, calories) {
-            let ID;
-            if(data.items.length > 0) {
-                ID = data.items[data.items.length - 1].id + 1
-            } else {
-                ID = 0
-            }
+        addItem: function(id, name, calories) {
             calories = parseInt(calories);
             // create item
-            newItem = new Item(ID, name, calories);
+            newItem = new Item(id, name, calories);
             data.items.push(newItem)
 
             // return
@@ -103,6 +97,17 @@ const ItemController = (function() {
             })
             UIController.populateItemList()
         },
+        removeItem: function(ID) {
+            let index
+            data.items.forEach(function(item) {
+                if(item.id === ID) {
+                    index = data.items.indexOf(item)
+                }
+            })
+            data.items.splice(index, 1)
+
+            UIController.populateItemList()
+        },
         logData: function() {
             return data
         },
@@ -126,6 +131,7 @@ const UIController = (function() {
         itemCaloriesInput: '#item-calories',
         addBtn: '.add-btn',
         editBtn: '.change-btn',
+        deleteBtn: '.delete-btn',
         totalCalories: '.total-calories'
     }
     return {
@@ -179,6 +185,7 @@ const UIController = (function() {
             if(event.target.parentElement.parentElement.className === "collection-item")
             {
                 document.querySelector(UISelectors.editBtn).style.display = 'inline';
+                document.querySelector(UISelectors.deleteBtn).style.display = 'inline';
 
                 // easier to do with ID but meh
                 const ID = parseInt(event.target.parentNode.parentNode.id.split("-")[1])
@@ -189,7 +196,7 @@ const UIController = (function() {
                 ItemController.setCurrentItem(Item)
                 UIController.setItemInput(Item.name, Item.calories)
             }
-        }
+        },
     }
 })();
 
@@ -203,12 +210,33 @@ const App = (function(StorageController, ItemController, UIController) {
 
         document.querySelector(UISelectors.itemList).addEventListener('click', UIController.editMeal)
         document.querySelector(UISelectors.editBtn).addEventListener('click', itemEditSubmit)
-
+        document.querySelector(UISelectors.deleteBtn).addEventListener('click', itemDeleteSubmit)
     }
+    const itemDeleteSubmit = function(event) {
+        const UISelector = UIController.getSelectors().deleteBtn
+        const UISelector1 = UIController.getSelectors().editBtn
 
+        let items = StorageController.getItems()
+        let ID = ItemController.getCurrentItem().id
+        let index
+        items.forEach(function(item) {
+            if(item.id === ID) {
+                index = items.indexOf(item)
+            }
+        })
+        items.splice(index, 1)
+        StorageController.updateList(items)
+        ItemController.removeItem(ID)
+
+        UIController.clearInput()
+        ItemController.clearCurrentItem()
+        document.querySelector(UISelector).style.display = 'none';
+        document.querySelector(UISelector1).style.display = 'none';
+    }
     const itemEditSubmit = function(event) {
         const input = UIController.getItemInput();
         const UISelector = UIController.getSelectors().editBtn
+        const UISelector1 = UIController.getSelectors().deleteBtn
 
         let items = StorageController.getItems()
         let ID = ItemController.getCurrentItem().id
@@ -223,14 +251,23 @@ const App = (function(StorageController, ItemController, UIController) {
 
         UIController.clearInput()
         ItemController.clearCurrentItem()
-        document.querySelector(UISelector).style.display = 'none';
+        document.querySelector(UISelector).style.display = 'none'
+        document.querySelector(UISelector1).style.display = 'none'
     }
     // Item add
     const itemAddSubmit = function(event) {
         const input = UIController.getItemInput()
         // prevent null being added to list
         if(input.name !== '' && input.calories !== '') {
-            const newItem = ItemController.addItem(input.name, input.calories)
+            let ID;
+            let items = StorageController.getItems()
+            if(items.length > 0) {
+                ID = items[items.length -1].id + 1;
+            }
+            else {
+                ID = 0;
+            }
+            const newItem = ItemController.addItem(ID, input.name, input.calories)
             StorageController.storeItem(newItem)
 
             // We don't need to make another function just to redo the item list
@@ -248,7 +285,7 @@ const App = (function(StorageController, ItemController, UIController) {
         const items = StorageController.getItems()
         items.forEach(function(item) {
             if(!ItemController.includes(item)) {
-                ItemController.addItem(item.name, item.calories)
+                ItemController.addItem(item.id, item.name, item.calories)
             }
         })
     }
