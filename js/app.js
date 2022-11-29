@@ -26,6 +26,9 @@ const StorageController = (function() {
         },
         updateList: function(items) {
             localStorage.setItem('items', JSON.stringify(items))
+        },
+        clearList: function() {
+            localStorage.setItem('items', JSON.stringify([]))
         }
     }
 })();
@@ -45,7 +48,8 @@ const ItemController = (function() {
 
         ],
         total: 0,
-        currentItem: null
+        currentItem: null,
+        oldItems: null
     }
 
     return {
@@ -79,6 +83,9 @@ const ItemController = (function() {
         getTotalCalories: function() {
             let calories = 0;
 
+            if(data.items === null)
+                return 0;
+
             // somehow adding together as a string
             data.items.forEach(function(item) {
                 calories = calories + parseInt(item.calories)
@@ -108,6 +115,9 @@ const ItemController = (function() {
 
             UIController.populateItemList()
         },
+        clearItems: function() {
+          data.items = null
+        },
         logData: function() {
             return data
         },
@@ -119,6 +129,18 @@ const ItemController = (function() {
         },
         clearCurrentItem: function() {
             data.currentItem = null
+        },
+        setOldItems: function(items) {
+            data.oldItems = items
+        },
+        clearOldItems: function() {
+            data.oldItems = null
+        },
+        getOldItems: function() {
+            return data.oldItems
+        },
+        setList: function(items) {
+            data.items = items
         }
     }
 })();
@@ -132,6 +154,8 @@ const UIController = (function() {
         addBtn: '.add-btn',
         editBtn: '.change-btn',
         deleteBtn: '.delete-btn',
+        deleteAllBtn: '.delete-all-btn',
+        revertBtn: '.revert-btn',
         totalCalories: '.total-calories'
     }
     return {
@@ -197,6 +221,31 @@ const UIController = (function() {
                 UIController.setItemInput(Item.name, Item.calories)
             }
         },
+        deleteAll: function(event) {
+            ItemController.setOldItems(ItemController.getItems())
+            ItemController.clearItems()
+
+            StorageController.clearList()
+            UIController.populateItemList()
+            document.querySelector(UISelectors.deleteAllBtn).removeEventListener('click', UIController.deleteAll)
+            document.querySelector(UISelectors.deleteAllBtn).setAttribute('class', 'revert-btn btn gray')
+            document.querySelector(UISelectors.revertBtn).addEventListener('click', UIController.revert)
+            document.querySelector(UISelectors.revertBtn).textContent = 'REVERT'
+        },
+        revert: function(event) {
+            const ItemList = ItemController.getOldItems()
+            if(ItemList === null)
+                return
+
+            StorageController.updateList(ItemList)
+            ItemController.setList(ItemList)
+            ItemController.setOldItems(null)
+            UIController.populateItemList()
+            document.querySelector(UISelectors.revertBtn).removeEventListener('click', UIController.revert)
+            document.querySelector(UISelectors.revertBtn).setAttribute('class', 'delete-all-btn btn green')
+            document.querySelector(UISelectors.deleteAllBtn).addEventListener('click', UIController.deleteAll)
+            document.querySelector(UISelectors.deleteAllBtn).textContent = 'DELETE ALL'
+        }
     }
 })();
 
@@ -211,6 +260,7 @@ const App = (function(StorageController, ItemController, UIController) {
         document.querySelector(UISelectors.itemList).addEventListener('click', UIController.editMeal)
         document.querySelector(UISelectors.editBtn).addEventListener('click', itemEditSubmit)
         document.querySelector(UISelectors.deleteBtn).addEventListener('click', itemDeleteSubmit)
+        document.querySelector(UISelectors.deleteAllBtn).addEventListener('click', UIController.deleteAll)
     }
     const itemDeleteSubmit = function(event) {
         const UISelector = UIController.getSelectors().deleteBtn
